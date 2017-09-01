@@ -815,10 +815,12 @@ class CertificatesViewsTests(CommonCertificatesTestCase):
             course_id=unicode(self.course.id)
         )
 
-        if is_self_paced or cert_avail_date > datetime.datetime.today():
-            expected_date = datetime.datetime.today()
+        today = datetime.datetime.utcnow().date()
+        if is_self_paced or cert_avail_date > today:
+            expected_date = today
         else:
             expected_date = self.course.certificate_available_date
+
         response = self.client.get(test_url)
         date = '{month} {day}, {year}'.format(
             month=strftime_localized(expected_date, "%B"),
