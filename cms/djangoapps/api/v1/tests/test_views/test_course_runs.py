@@ -9,7 +9,7 @@ from student.models import CourseAccessRole
 from student.tests.factories import AdminFactory, TEST_PASSWORD, UserFactory
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
+from xmodule.modulestore.tests.factories import CourseFactory, ToyCourseFactory
 from ..utils import serialize_datetime
 from ...serializers.course_runs import CourseRunSerializer
 
@@ -186,3 +186,30 @@ class CourseRunViewSetTests(ModuleStoreTestCase):
         # An error will be raised if the endpoint doesn't create the role
         CourseAccessRole.objects.get(course_id=course_run.id, user=user, role=role)
         assert CourseAccessRole.objects.filter(course_id=course_run.id).count() == 1
+
+    def test_rerun(self):
+        course_run = ToyCourseFactory()
+        user = UserFactory()
+        role = 'instructor'
+        CourseAccessRole.objects.create(course_id=course_run.id, user=user, role=role)
+
+        run = '3T2017'
+        url = reverse('api:v1:course_run-rerun', kwargs={'pk': str(course_run.id)})
+        data = {
+            'run': run,
+        }
+        response = self.client.post(url, data, format='json')
+        assert response.status_code == 201
+
+        course_run_key = CourseKey.from_string(response.data['id'])
+        course_run = modulestore().get_course(course_run_key)
+        assert course_run.id.run == run
+
+    def test_rerun_duplicate_run(self):
+        course_run = ToyCourseFactory()
+        url = reverse('api:v1:course_run-rerun', kwargs={'pk': str(course_run.id)})
+        data = {
+            'run': course_run.id.run,
+        }
+        response = self.client.post(url, data, format='json')
+        assert response.status_code == 400
