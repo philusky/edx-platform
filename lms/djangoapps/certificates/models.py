@@ -1000,6 +1000,13 @@ class CertificateTemplate(TimeStampedModel):
         help_text=_(u'On/Off switch.'),
         default=False,
     )
+    language = models.CharField(
+        max_length=2,
+        choices=settings.ALL_LANGUAGES,
+        blank=True,
+        null=True,
+        help_text=_(u'Language of template')
+    )
 
     def __unicode__(self):
         return u'%s' % (self.name, )
