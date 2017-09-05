@@ -1005,7 +1005,7 @@ class CertificateTemplate(TimeStampedModel):
         choices=settings.ALL_LANGUAGES,
         blank=True,
         null=True,
-        help_text=_(u'Language of template')
+        help_text=_(u'Optional. Only certificates for courses in the selected language will be rendered using this template')
     )
 
     def __unicode__(self):
