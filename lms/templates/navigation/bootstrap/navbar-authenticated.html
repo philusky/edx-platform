@@ -44,6 +44,11 @@ from django.utils.translation import ugettext as _
           ${_("Programs")}
         </a>
       </li>
+      <li class="nav-item mt-2 nav-item-open-collapsed">
+          <a class="${'active ' if data and data.get('profile_user_id') is not None else ''}tab-nav-link" href="${reverse('learner_profile', args=[request.user.username])}">
+          ${_("Profile")}
+        </a>
+      </li>
     % endif
 
     % if settings.FEATURES.get('ENABLE_SYSADMIN_DASHBOARD','') and user.is_staff:
