@@ -10,6 +10,7 @@ from edx_ace import ace
 from edx_ace.message import MessageType, Message
 from edx_ace.recipient import Recipient
 from edx_ace.utils.date import deserialize
+from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.schedules.models import Schedule, ScheduleConfig
 
 
@@ -49,6 +50,17 @@ def _recurring_nudge_schedule_send(site_id, msg_str):
 
     msg = Message.from_string(msg_str)
     ace.send(msg)
+
+
+@task(routing_key=ROUTING_KEY)
+def update_course_schedules(course_id, new_start_date_str, new_upgrade_deadline_str):
+    course_key = CourseKey.from_string(course_id)
+    new_start_date = deserialize(new_start_date_str)
+    new_upgrade_deadline = deserialize(new_upgrade_deadline_str)
+    Schedule.objects.filter(enrollment__course_id=course_key).update(
+        start=new_start_date,
+        upgrade_deadline=new_upgrade_deadline
+    )
 
 
 def _recurring_nudge_schedules_for_hour(target_hour, org_list, exclude_orgs=False):

@@ -6,10 +6,14 @@ from django.dispatch import receiver
 
 from course_modes.models import CourseMode
 from courseware.models import DynamicUpgradeDeadlineConfiguration, CourseDynamicUpgradeDeadlineConfiguration
+from edx_ace.utils import date
+from openedx.core.djangoapps.signals.signals import COURSE_START_DATE_CHANGED
 from openedx.core.djangoapps.theming.helpers import get_current_site
 from openedx.core.djangoapps.waffle_utils import WaffleFlagNamespace, CourseWaffleFlag
 from student.models import CourseEnrollment
 from .models import Schedule, ScheduleConfig
+from .tasks import update_course_schedules
+
 
 log = logging.getLogger(__name__)
 
@@ -87,3 +91,19 @@ def create_schedule(sender, **kwargs):
 
     log.debug('Schedules: created a new schedule starting at %s with an upgrade deadline of %s',
               content_availability_date, upgrade_deadline)
+
+
+@receiver(COURSE_START_DATE_CHANGED)
+def update_schedules_on_course_start_changed(sender, updated_course_overview, previous_start_date, **kwargs):
+    if previous_start_date > datetime.datetime.utcnow():
+        # since course hasn't started, update all schedules
+        update_course_schedules.apply_async(
+            unicode(updated_course_overview.id),
+            date.serialize(updated_course_overview.start),
+            date.serialize(_calculate_upgrade_deadline(updated_course_overview))
+        )
+
+
+def _calculate_upgrade_deadline(updated_course_overview):
+    # TODO - refactor create_schedule to extract this logic
+    return updated_course_overview.start

@@ -5,12 +5,14 @@ and disabling for instructor-paced courses.
 import mock
 
 from certificates import api as certs_api
-from certificates.models import \
-    CertificateGenerationConfiguration, \
-    CertificateWhitelist, \
-    GeneratedCertificate, \
-    CertificateStatuses
-from openedx.core.djangoapps.signals.handlers import _listen_for_course_pacing_changed
+from certificates.models import (
+    CertificateGenerationConfiguration,
+    CertificateWhitelist,
+    GeneratedCertificate,
+    CertificateStatuses,
+)
+from certificates.signals import _listen_for_course_pacing_changed
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from lms.djangoapps.grades.new.course_grade_factory import CourseGradeFactory
 from lms.djangoapps.grades.tests.utils import mock_passing_grade
 from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification
@@ -30,6 +32,8 @@ class SelfGeneratedCertsSignalTest(ModuleStoreTestCase):
         super(SelfGeneratedCertsSignalTest, self).setUp()
         SelfPacedConfiguration(enabled=True).save()
         self.course = CourseFactory.create(self_paced=True)
+        self.course_overview = CourseOverview.load_from_module_store(self.course.id)
+
         # Enable the feature
         CertificateGenerationConfiguration.objects.create(enabled=True)
 
@@ -38,17 +42,18 @@ class SelfGeneratedCertsSignalTest(ModuleStoreTestCase):
         Verify that signal enables or disables self-generated certificates
         according to course-pacing.
         """
-        #self-generation of cert disables by default
+        #self-generation of cert disabled by default
         self.assertFalse(certs_api.cert_generation_enabled(self.course.id))
 
-        _listen_for_course_pacing_changed('store', self.course.id, self.course.self_paced)
+        _listen_for_course_pacing_changed('store', self.course_overview)
         #verify that self-generation of cert is enabled for self-paced course
         self.assertTrue(certs_api.cert_generation_enabled(self.course.id))
 
         self.course.self_paced = False
         self.store.update_item(self.course, self.user.id)
+        self.course_overview = CourseOverview.load_from_module_store(self.course.id)
 
-        _listen_for_course_pacing_changed('store', self.course.id, self.course.self_paced)
+        _listen_for_course_pacing_changed('store', self.course_overview)
         # verify that self-generation of cert is disabled for instructor-paced course
         self.assertFalse(certs_api.cert_generation_enabled(self.course.id))
 

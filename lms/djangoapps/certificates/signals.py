@@ -18,9 +18,8 @@ from openedx.core.djangoapps.certificates.api import (
     auto_certificate_generation_enabled,
     auto_certificate_generation_enabled_for_course,
 )
-from openedx.core.djangoapps.certificates.config import waffle
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.signals.signals import COURSE_GRADE_NOW_PASSED, LEARNER_NOW_VERIFIED
+from openedx.core.djangoapps.signals.signals import COURSE_GRADE_NOW_PASSED, LEARNER_NOW_VERIFIED, COURSE_PACING_CHANGED
 from student.models import CourseEnrollment
 
 
@@ -75,6 +74,25 @@ def _listen_for_track_change(sender, user, **kwargs):  # pylint: disable=unused-
                     user=user.id,
                     course=enrollment.course_id
                 ))
+
+
+@receiver(COURSE_PACING_CHANGED, dispatch_uid="course_pacing_changed")
+def _listen_for_course_pacing_changed(sender, updated_course_overview, **kwargs):  # pylint: disable=unused-argument
+    """
+    Catches the signal that course pacing has changed and enable/disable
+    the self-generated certificates according to course-pacing.
+    """
+    toggle_self_generated_certs(updated_course_overview.id, updated_course_overview.self_paced)
+    log.info(u'Certificate Generation Setting Toggled for {course_id} via pacing change'.format(
+        course_id=updated_course_overview.id
+    ))
+
+
+def toggle_self_generated_certs(course_key, course_self_paced):
+    """
+    Enable or disable self-generated certificates for a course according to pacing.
+    """
+    CertificateGenerationCourseSetting.set_enabled_for_course(course_key, course_self_paced)
 
 
 def fire_ungenerated_certificate_task(user, course_key):
