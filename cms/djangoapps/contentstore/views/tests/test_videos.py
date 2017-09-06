@@ -992,7 +992,6 @@ class TranscriptPreferencesTestCase(VideoUploadTestBase, CourseTestCase):
         file_name = 'test-video.mp4'
         request_data = {'files': [{'file_name': file_name, 'content_type': 'video/mp4'}]}
 
-        from nose.tools import set_trace;set_trace()
         mock_transcript_preferences.return_value = transcript_preferences
 
         bucket = Mock()

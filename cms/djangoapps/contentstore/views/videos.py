@@ -662,7 +662,6 @@ def videos_post(course, request):
             ('course_key', unicode(course.id)),
         ]
 
-        from nose.tools import set_trace;set_trace()
         transcript_preferences = get_transcript_preferences(unicode(course.id))
         if transcript_preferences is not None:
             metadata_list.append(('transcript_preferences', json.dumps(transcript_preferences)))
