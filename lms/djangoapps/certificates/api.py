@@ -24,7 +24,6 @@ from certificates.models import (
     certificate_status_for_student
 )
 from certificates.queue import XQueueCertInterface
-from courseware.courses import get_course_by_id
 from eventtracking import tracker
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.xmodule_django.models import CourseKeyField
@@ -235,7 +234,7 @@ def certificate_downloadable_status(student, course_key):
         'download_url': None,
         'uuid': None,
     }
-    may_view_certificate = get_course_by_id(course_key).may_certify()
+    may_view_certificate = CourseOverview.get_from_id(course_key).may_certify()
 
     if current_status['status'] == CertificateStatuses.downloadable and may_view_certificate:
         response_data['is_downloadable'] = True
