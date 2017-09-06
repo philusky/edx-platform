@@ -151,23 +151,12 @@ class TestSendRecurringNudge(CacheIsolationTestCase):
                 enrollment__course__org=unfiltered_org,
             )
 
-        print(filtered_sched.enrollment)
-        print(filtered_sched.enrollment.course)
-        print(filtered_sched.enrollment.course.org)
-        print(unfiltered_scheds[0].enrollment)
-        print(unfiltered_scheds[0].enrollment.course)
-        print(unfiltered_scheds[0].enrollment.course.org)
-        print(unfiltered_scheds[1].enrollment)
-        print(unfiltered_scheds[1].enrollment.course)
-        print(unfiltered_scheds[1].enrollment.course.org)
-
         test_time_str = serialize(datetime.datetime(2017, 8, 2, 17, tzinfo=pytz.UTC))
         with self.assertNumQueries(1):
             tasks.recurring_nudge_schedule_hour(
                 limited_config.site.id, 3, test_time_str, org_list=org_list, exclude_orgs=exclude_orgs,
             )
 
-        print(mock_schedule_send.mock_calls)
         self.assertEqual(mock_schedule_send.apply_async.call_count, expected_message_count)
         self.assertFalse(mock_ace.send.called)
 
