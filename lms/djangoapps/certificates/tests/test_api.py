@@ -83,6 +83,7 @@ class WebCertificateTestMixin(object):
 
 
 @attr(shard=1)
+@ddt.ddt
 class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTestCase):
     """Tests for the `certificate_downloadable_status` helper function. """
     ENABLED_SIGNALS = ['course_published']
@@ -203,6 +204,31 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
                 ),
                 'uuid': cert_status['uuid']
             }
+        )
+
+    @ddt.data(
+        (False, datetime.now(pytz.UTC) + timedelta(days=2), False),
+        (False, datetime.now(pytz.UTC) - timedelta(days=2), True),
+        (True, datetime.now(pytz.UTC) + timedelta(days=2), True)
+    )
+    @ddt.unpack
+    @patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': True})
+    def test_cert_api_return(self, self_paced, cert_avail_date, cert_downloadable_status):
+        """
+        Test 'downloadable status'
+        """
+        self.course.self_paced = self_paced
+        self.course.certificate_available_date = cert_avail_date
+        self.course.save()
+
+        CourseEnrollment.enroll(self.student, self.course.id, mode='honor')
+        self._setup_course_certificate()
+        with mock_passing_grade():
+            certs_api.generate_user_certificates(self.student, self.course.id)
+
+        self.assertEqual(
+            certs_api.certificate_downloadable_status(self.student, self.course.id)['is_downloadable'],
+            cert_downloadable_status
         )
 
 
