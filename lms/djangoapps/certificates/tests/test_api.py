@@ -100,6 +100,7 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
             self_paced=False,
             certificate_available_date=datetime.now(pytz.UTC) - timedelta(days=2)
         )
+
         self.request_factory = RequestFactory()
 
     def test_cert_status_with_generating(self):
@@ -163,6 +164,7 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
             mode='verified',
             download_url='www.google.com',
         )
+
         self.assertEqual(
             certs_api.certificate_downloadable_status(self.student, self.course.id),
             {
@@ -226,7 +228,7 @@ class CertificateisInvalid(WebCertificateTestMixin, ModuleStoreTestCase):
         course = CourseFactory.create(
             org='edx',
             number='honor',
-            display_name='Course 1',
+            display_name='Course 1'
         )
         # Also check query count for 'is_certificate_invalid' method.
         with self.assertNumQueries(1):
