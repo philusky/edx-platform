@@ -13,7 +13,7 @@ from branding import api as branding_api
 
 <h1 class="hd logo-header">
   <div class="logo">
-    <a href="${marketing_link('ROOT')}">
+    <a href="${reverse('dashboard')}">
       <%block name="navigation_logo">
       <img src="${branding_api.get_logo_url(is_secure)}" alt="${_("{platform_name} Home Page").format(platform_name=static.get_platform_name())}"/>
       </%block>
