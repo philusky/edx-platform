@@ -9,12 +9,17 @@ from django.conf import settings
 from edx_ace.utils.date import serialize
 
 from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.locator import CourseLocator
 from openedx.core.djangoapps.schedules import tasks
 from openedx.core.djangoapps.schedules.management.commands import send_recurring_nudge as nudge
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.djangoapps.schedules.tests.factories import ScheduleFactory, ScheduleConfigFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
+from student.tests.factories import UserFactory
+
+
+from openedx.core.djangoapps.schedules.models import Schedule
 
 
 @ddt.ddt
@@ -136,17 +141,15 @@ class TestSendRecurringNudge(CacheIsolationTestCase):
         for config in (limited_config, unlimited_config):
             ScheduleConfigFactory.create(site=config.site)
 
-        filtered_sched = ScheduleFactory.create(
+        ScheduleFactory.create(
             start=datetime.datetime(2017, 8, 2, 17, 44, 30, tzinfo=pytz.UTC),
             enrollment__course__org=filtered_org,
         )
-        unfiltered_scheds = [
+        for _ in range(2):
             ScheduleFactory.create(
                 start=datetime.datetime(2017, 8, 2, 17, 44, 30, tzinfo=pytz.UTC),
                 enrollment__course__org=unfiltered_org,
             )
-            for _ in range(2)
-        ]
 
         print(filtered_sched.enrollment)
         print(filtered_sched.enrollment.course)
@@ -166,4 +169,31 @@ class TestSendRecurringNudge(CacheIsolationTestCase):
 
         print(mock_schedule_send.mock_calls)
         self.assertEqual(mock_schedule_send.apply_async.call_count, expected_message_count)
+        self.assertFalse(mock_ace.send.called)
+
+    @ddt.data(
+        (19, 1),
+        (20, 0),
+        (21, 0)
+    )
+    @ddt.unpack
+    @patch.object(tasks, 'ace')
+    @patch.object(tasks, '_recurring_nudge_schedule_send')
+    def test_multiple_enrollments(self, test_hour, messages_sent, mock_schedule_send, mock_ace):
+        user = UserFactory.create()
+        schedules = [
+            ScheduleFactory.create(
+                start=datetime.datetime(2017, 8, 1, hour, 44, 30, tzinfo=pytz.UTC),
+                enrollment__user=user,
+                enrollment__course__id=CourseLocator('edX', 'toy', 'Hour{}'.format(hour))
+            )
+            for hour in (19, 20, 21)
+        ]
+
+        test_time_str = serialize(datetime.datetime(2017, 8, 1, test_hour, tzinfo=pytz.UTC))
+        with self.assertNumQueries(1):
+            tasks.recurring_nudge_schedule_hour(
+                self.site_config.site, 3, test_time_str, [schedules[0].enrollment.course.org],
+            )
+        self.assertEqual(mock_schedule_send.apply_async.call_count, messages_sent)
         self.assertFalse(mock_ace.send.called)
