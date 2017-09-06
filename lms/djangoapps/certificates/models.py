@@ -1002,7 +1002,7 @@ class CertificateTemplate(TimeStampedModel):
     )
     language = models.CharField(
         max_length=2,
-        choices=settings.ALL_LANGUAGES,
+        choices=settings.LANGUAGES,
         blank=True,
         null=True,
         help_text=_(u'Optional. Only certificates for courses in the selected language will be rendered using this template')
