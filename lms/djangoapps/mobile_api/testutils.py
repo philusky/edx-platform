@@ -44,7 +44,7 @@ class MobileAPITestCase(ModuleStoreTestCase, APITestCase):
         self.course = CourseFactory.create(
             mobile_available=True,
             static_asset_path="needed_for_split",
-            end=datetime.datetime.now(),
+            end=datetime.datetime.now(pytz.UTC),
             certificate_available_date=datetime.datetime.now(pytz.UTC)
         )
         self.user = UserFactory.create()

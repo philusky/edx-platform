@@ -97,7 +97,7 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
             org='edx',
             number='verified',
             display_name='Verified Course',
-            end=datetime.now(),
+            end=datetime.now(pytz.UTC),
             self_paced=False,
             certificate_available_date=datetime.now(pytz.UTC) - timedelta(days=2)
         )
